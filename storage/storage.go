@@ -2,7 +2,7 @@ package storage
 
 type Storage interface {
 	Save(p *AddShopItem) error
-	ShopItems() ([]ShopItem, error)
+	ShopItems(...int64) ([]ShopItem, error)
 	ChangeShopItemCount(string, int) error
 	RemoveShopItem(string) error
 	ModifyNameShopItem(string, string) error

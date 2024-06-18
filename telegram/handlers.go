@@ -18,6 +18,10 @@ func handleCumparaturiSectionBtn(c tele.Context) error {
 }
 
 func handleOntext(c tele.Context) error {
+	if c.Text() == menuCumparaturiShowCommStr {
+		return handleCumparaturiShowCommBtn(c)
+	}
+
 	userID := c.Sender().ID
 	action, ok := userActionsMap[userID]
 	if !ok {
@@ -80,59 +84,11 @@ func handleOnCallback(c tele.Context) error {
 }
 
 func handleCumparaturiShowCommBtn(c tele.Context) error {
-	call := c.Callback()
-	action := userAction{
-		userCommnd: "FocusCumparaturi",
-	}
-	userActionsMap[c.Sender().ID] = action
+	return showCumparaturi(c, COMMON_CUMPARATURI)
+}
 
-	InlineShopButtonsList2 := make([][]tele.InlineButton, 10)
-	for i := range InlineShopButtonsList2 {
-		InlineShopButtonsList2[i] = make([]tele.InlineButton, 0, 10)
-	}
-
-	list, err := processor.storage.ShopItems()
-	if err != nil {
-		fmt.Println(err)
-		_ = processor.Bot.Respond(call, &tele.CallbackResponse{
-			Text:      "storage ERROR",
-			ShowAlert: true,
-		})
-	}
-	if len(list) == 0 {
-		return processor.Bot.Respond(call, &tele.CallbackResponse{
-			Text: "no items, please add",
-		})
-	}
-
-	numnerOfElementsPerRow := 2
-	row := 0
-	for idx, element := range list {
-		if idx%numnerOfElementsPerRow == 0 {
-			row += 1
-		}
-		payload := fmt.Sprintf("%s||%s", element.ID, element.ItemName)
-		buttonText := fmt.Sprintf("%d🧮 %s", element.Count, element.ItemName)
-
-		btn := tele.InlineButton{Text: buttonText, Data: payload}
-		InlineShopButtonsList2[row] = append(InlineShopButtonsList2[row], btn)
-	}
-
-	processor.Bot.Send(c.Sender(), "~🛒🛍️", &tele.ReplyMarkup{
-		InlineKeyboard: InlineShopButtonsList2,
-	})
-
-	if err != nil {
-		fmt.Println(err)
-		_ = processor.Bot.Respond(call, &tele.CallbackResponse{
-			Text:      "inline btn ERROR",
-			ShowAlert: true,
-		})
-	}
-	return processor.Bot.Respond(call, &tele.CallbackResponse{
-		Text:      "Lista afisata ✨",
-		ShowAlert: false,
-	})
+func handleCumparaturiShowMyBtn(c tele.Context) error {
+	return showCumparaturi(c, MY_CUMPARATURI)
 }
 
 func handleCumparaturiAddBtn(c tele.Context) error {
@@ -144,6 +100,40 @@ func handleCumparaturiAddBtn(c tele.Context) error {
 	fmt.Println(userActionsMap)
 
 	return c.Send("Ce vrei sa adaugi?", tele.ForceReply)
+}
+
+func handleModifyShopItemBtn(c tele.Context) error {
+	action, ok := userActionsMap[c.Sender().ID]
+	if !ok {
+		return failedAction(c)
+	}
+	action.userCommnd = "modifyCumparaturi"
+	userActionsMap[c.Sender().ID] = action
+
+	return c.Send("Da un nume nou:", tele.ForceReply)
+}
+
+func handleDeleteShopItemBtn(c tele.Context) error {
+	action, ok := userActionsMap[c.Sender().ID]
+	if !ok {
+		return failedAction(c)
+	}
+	if action.userText == "" {
+		return failedAction(c)
+	}
+
+	err := processor.storage.RemoveShopItem(action.userText)
+	if err != nil {
+		fmt.Println(err)
+		return failedAction(c)
+	}
+
+	var strikethroughUserShopItemName string
+	for _, r := range action.userShopItemName {
+		strikethroughUserShopItemName += string(r) + strikethrough
+	}
+
+	return c.Send(fmt.Sprintf("%s 😵", strikethroughUserShopItemName))
 }
 
 func handleMinusShopItemBtn(c tele.Context) error {
@@ -175,30 +165,6 @@ func handlePlusShopItemBtn(c tele.Context) error {
 	return c.Send("+1 👍")
 }
 
-func handleModifyShopItemBtn(c tele.Context) error {
-	action := userActionsMap[c.Sender().ID]
-	action.userCommnd = "modifyCumparaturi"
-	userActionsMap[c.Sender().ID] = action
-
-	return c.Send("Da un nume nou.", tele.ForceReply)
-}
-
-func handleDeleteShopItemBtn(c tele.Context) error {
-	action := userActionsMap[c.Sender().ID]
-	if action.userText == "" {
-		return failedAction(c)
-	}
-
-	err := processor.storage.RemoveShopItem(action.userText)
-	if err != nil {
-		fmt.Println(err)
-		return failedAction(c)
-	}
-
-	var strikethroughUserShopItemName string
-	for _, r := range action.userShopItemName {
-		strikethroughUserShopItemName += string(r) + strikethrough
-	}
-
-	return c.Send(fmt.Sprintf("%s 😵", strikethroughUserShopItemName))
+func handleCumparaturiRemBtn(c tele.Context) error {
+	return c.Send("TO BE DONE 👍")
 }

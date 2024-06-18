@@ -8,6 +8,11 @@ import (
 
 const strikethrough = "\u0336" // Combining Long Stroke Overlay
 
+const (
+	COMMON_CUMPARATURI = 0
+	MY_CUMPARATURI     = 1
+)
+
 type userAction struct {
 	userCommnd       string
 	userText         string
@@ -46,7 +51,9 @@ func (p *Processor) handlers() error {
 	p.Bot.Handle(tele.OnText, handleOntext)
 	p.Bot.Handle(tele.OnCallback, handleOnCallback)
 	p.Bot.Handle(&cumparaturiShowCommBtn, handleCumparaturiShowCommBtn)
+	p.Bot.Handle(&cumparaturiShowMyBtn, handleCumparaturiShowMyBtn)
 	p.Bot.Handle(&cumparaturiAddBtn, handleCumparaturiAddBtn)
+	p.Bot.Handle(&cumparaturiRemBtn, handleCumparaturiRemBtn)
 	p.Bot.Handle(&minusShopItemBtn, handleMinusShopItemBtn)
 	p.Bot.Handle(&plusShopItemBtn, handlePlusShopItemBtn)
 	p.Bot.Handle(&modifyShopItemBtn, handleModifyShopItemBtn)

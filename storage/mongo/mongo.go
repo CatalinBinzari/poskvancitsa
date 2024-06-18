@@ -57,10 +57,12 @@ func (s Storage) Save(i *storage.AddShopItem) error {
 	return nil
 }
 
-func (s Storage) ShopItems() ([]storage.ShopItem, error) {
-
+func (s Storage) ShopItems(userID ...int64) ([]storage.ShopItem, error) {
 	filter := bson.M{}
-
+	if len(userID) != 0 {
+		// fmt.Println(userID)
+		filter = bson.M{"addedBy": fmt.Sprint(userID[0])}
+	}
 	cur, err := s.shopList.Find(context.Background(), filter)
 	if err != nil {
 		return []storage.ShopItem{}, err
