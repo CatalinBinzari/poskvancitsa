@@ -2,24 +2,23 @@ package mongo
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"poskvancitsa/storage"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Storage struct {
-	pages Pages
+	shopList ShopList
 }
 
-type Pages struct {
+type ShopList struct {
 	*mongo.Collection
-}
-
-type Page struct {
-	URL      string `bson:"url"`
-	UserName string `bson:"username"`
 }
 
 func New(connectString string, connectTimeout time.Duration) Storage {
@@ -35,65 +34,116 @@ func New(connectString string, connectTimeout time.Duration) Storage {
 		log.Fatal(err)
 	}
 
-	pages := Pages{
-		Collection: client.Database("read-adviser").Collection("pages"),
+	shopList := ShopList{
+		Collection: client.Database("poskvancitsa").Collection("shoplist"),
 	}
 
 	return Storage{
-		pages: pages,
+		shopList: shopList,
 	}
 }
 
-// func (s Storage) Save(ctx context.Context, page *storage.Page) error {
-// 	_, err := s.pages.InsertOne(ctx, Page{
-// 		URL:      page.URL,
-// 		UserName: page.UserName,
-// 	})
-// 	if err != nil {
-// 		return e.Wrap("can't save page", err)
-// 	}
+func (s Storage) Save(i *storage.AddShopItem) error {
 
-// 	return nil
-// }
+	_, err := s.shopList.InsertOne(context.Background(), storage.AddShopItem{
+		AddedBy:  i.AddedBy,
+		Count:    i.Count,
+		ItemName: i.ItemName,
+	})
+	if err != nil {
+		return fmt.Errorf("can't save shop item %s", err)
+	}
 
-// func (s Storage) PickRandom(ctx context.Context, userName string) (page *storage.Page, err error) {
-// 	defer func() { err = e.WrapIfErr("can't pick random page", err) }()
+	return nil
+}
 
-// 	pipe := bson.A{
-// 		bson.M{"$sample": bson.M{"size": 1}},
-// 	}
+func (s Storage) ShopItems() ([]storage.ShopItem, error) {
 
-// 	cursor, err := s.pages.Aggregate(ctx, pipe)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	filter := bson.M{}
 
-// 	var p Page
+	cur, err := s.shopList.Find(context.Background(), filter)
+	if err != nil {
+		return []storage.ShopItem{}, err
+	}
+	defer cur.Close(context.Background())
 
-// 	cursor.Next(ctx)
+	var items []storage.ShopItem
+	for cur.Next(context.Background()) {
+		var item storage.ShopItem
+		if err := cur.Decode(&item); err != nil {
+			return nil, err
+		}
 
-// 	err = cursor.Decode(&p)
-// 	switch {
-// 	case errors.Is(err, io.EOF):
-// 		return nil, storage.ErrNoSavedPages
-// 	case err != nil:
-// 		return nil, err
-// 	}
+		items = append(items, item)
+	}
+	if err := cur.Err(); err != nil {
+		return nil, err
+	}
 
-// 	return &storage.Page{
-// 		URL:      p.URL,
-// 		UserName: p.UserName,
-// 	}, nil
-// }
+	return items, nil
+}
 
-// func (s Storage) Remove(ctx context.Context, storagePage *storage.Page) error {
-// 	_, err := s.pages.DeleteOne(ctx, toPage(storagePage).Filter())
-// 	if err != nil {
-// 		return e.Wrap("can't remove page", err)
-// 	}
+func (s Storage) PlusOneShopItem(_id string) error {
+	mongoID, err := primitive.ObjectIDFromHex(_id)
+	if err != nil {
+		return err
+	}
+	filter := bson.M{"_id": mongoID}
+	update := bson.D{{"$inc", bson.D{{"count", 1}}}}
+	_, err = s.shopList.UpdateOne(context.Background(), filter, update,
+		options.Update().SetUpsert(true))
+	if err != nil {
+		return fmt.Errorf("can't update shop item %s", err)
+	}
 
-// 	return nil
-// }
+	return nil
+}
+
+func (s Storage) MinusOneShopItem(_id string) error {
+	mongoID, err := primitive.ObjectIDFromHex(_id)
+	if err != nil {
+		return err
+	}
+	filter := bson.M{"_id": mongoID}
+	update := bson.D{{"$inc", bson.D{{"count", -1}}}}
+	_, err = s.shopList.UpdateOne(context.Background(), filter, update,
+		options.Update().SetUpsert(true))
+	if err != nil {
+		return fmt.Errorf("can't update shop item %s", err)
+	}
+
+	return nil
+}
+
+func (s Storage) RemoveShopItem(_id string) error {
+	mongoID, err := primitive.ObjectIDFromHex(_id)
+	if err != nil {
+		return err
+	}
+	filter := bson.M{"_id": mongoID}
+	_, err = s.shopList.DeleteOne(context.Background(), filter)
+	if err != nil {
+		return fmt.Errorf("can't delete shop item %s", err)
+	}
+
+	return nil
+}
+
+func (s Storage) ModifyNameShopItem(_id string, itemName string) error {
+	mongoID, err := primitive.ObjectIDFromHex(_id)
+	if err != nil {
+		return err
+	}
+	filter := bson.M{"_id": mongoID}
+	update := bson.D{{"$set", bson.D{{"itemName", itemName}}}}
+	_, err = s.shopList.UpdateOne(context.Background(), filter, update,
+		options.Update().SetUpsert(true))
+	if err != nil {
+		return fmt.Errorf("can't update shop item %s", err)
+	}
+
+	return nil
+}
 
 // func (s Storage) IsExists(ctx context.Context, storagePage *storage.Page) (bool, error) {
 // 	count, err := s.pages.CountDocuments(ctx, toPage(storagePage).Filter())

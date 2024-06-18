@@ -1,36 +1,29 @@
 package storage
 
 import (
-	"crypto/sha1"
 	"errors"
-	"fmt"
-	"io"
 )
 
 type Storage interface {
-	// Save(ctx context.Context, p *Page) error
-	// PickRandom(ctx context.Context, userName string) (*Page, error)
-	// Remove(ctx context.Context, p *Page) error
-	// IsExists(ctx context.Context, p *Page) (bool, error)
+	Save(p *AddShopItem) error
+	ShopItems() ([]ShopItem, error)
+	PlusOneShopItem(string) error
+	MinusOneShopItem(string) error
+	RemoveShopItem(string) error
+	ModifyNameShopItem(string, string) error
+}
+
+type ShopItem struct {
+	ID       string `bson:"_id"`
+	AddedBy  string `bson:"addedBy"`
+	Count    int    `bson:"count"`
+	ItemName string `bson:"itemName"`
+}
+
+type AddShopItem struct {
+	AddedBy  string `bson:"addedBy"`
+	Count    int    `bson:"count"`
+	ItemName string `bson:"itemName"`
 }
 
 var ErrNoSavedPages = errors.New("no saved pages")
-
-type Page struct {
-	URL      string
-	UserName string
-}
-
-func (p Page) Hash() (string, error) {
-	h := sha1.New()
-
-	if _, err := io.WriteString(h, p.URL); err != nil {
-		return "", fmt.Errorf("can't calculate hash %s", err)
-	}
-
-	if _, err := io.WriteString(h, p.UserName); err != nil {
-		return "", fmt.Errorf("can't calculate hash %s", err)
-	}
-
-	return fmt.Sprintf("%x", h.Sum(nil)), nil
-}
