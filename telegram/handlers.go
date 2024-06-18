@@ -62,23 +62,34 @@ func handleOnCallback(c tele.Context) error {
 	if !ok {
 		return unknownAction(c)
 	}
+	if action.userCommnd == "" {
+		return unknownAction(c)
+	}
 
-	if action.userCommnd == "FocusCumparaturi" {
-		call := c.Callback()
-		fmt.Printf("%+v", call)
-		if call.Data == "" {
-			fmt.Println("Unknown callback data")
-		}
+	call := c.Callback()
+	fmt.Printf("%+v", call)
+	if call.Data == "" {
+		fmt.Println("Unknown callback data")
+	}
 
-		parts := strings.Split(call.Data, "||")
-		action.userText = parts[0]
-		action.userShopItemName = parts[1]
-		userActionsMap[userID] = action
+	parts := strings.Split(call.Data, "||")
+	if len(parts) != 2 {
+		return unknownAction(c)
+	}
+	action.userText = parts[0]
+	action.userShopItemName = parts[1]
+	userActionsMap[userID] = action
+
+	switch action.userCommnd {
+	case "FocusCumparaturi":
 		return c.Send(userActionsMap[userID].userShopItemName,
 			&tele.SendOptions{
 				ReplyTo: c.Message(),
 			},
 			shopItemFocusSelector)
+
+	case "RemCumparaturi":
+		return handleDeleteShopItemBtn(c)
 	}
 	return nil
 }
@@ -166,5 +177,10 @@ func handlePlusShopItemBtn(c tele.Context) error {
 }
 
 func handleCumparaturiRemBtn(c tele.Context) error {
-	return c.Send("TO BE DONE 👍")
+	showCumparaturi(c, COMMON_CUMPARATURI)
+	action := userAction{
+		userCommnd: "RemCumparaturi",
+	}
+	userActionsMap[c.Sender().ID] = action
+	return c.Send("Alege ce doresti sa stergi.")
 }

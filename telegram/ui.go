@@ -21,8 +21,8 @@ var (
 
 	cumparaturiShowMyBtn   = cumparaturiSelector.Data("🙋🏻‍♂️ Arata lista mea", "cumparaturiShowMyBtn", "test")
 	cumparaturiShowCommBtn = cumparaturiSelector.Data(menuCumparaturiShowCommStr, "cumparaturiShowCommBtn", "test")
-	cumparaturiAddBtn      = cumparaturiSelector.Data("✍️ Adauga", "cumparaturiAdd", "test")
-	cumparaturiRemBtn      = cumparaturiSelector.Data("❌ Sterge", "cumparaturiRemove", "test keyword")
+	cumparaturiAddBtn      = cumparaturiSelector.Data("✍️ Adauga", "cumparaturiAddBtn", "test")
+	cumparaturiRemBtn      = cumparaturiSelector.Data("❌ Sterge", "cumparaturiRemBtn", "test keyword")
 
 	minusShopItemBtn  = shopItemFocusSelector.Data("➖", "minusShopItemBtn", "test")
 	plusShopItemBtn   = shopItemFocusSelector.Data("➕", "plusShopItemBtn", "test")
