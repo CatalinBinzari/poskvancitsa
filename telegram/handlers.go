@@ -13,12 +13,15 @@ func handleStart(c tele.Context) error {
 	return startCommand(c)
 }
 
+func handleCumparaturiSectionBtn(c tele.Context) error {
+	return c.Edit("poshopyatsa", cumparaturiSelector)
+}
+
 func handleOntext(c tele.Context) error {
 	userID := c.Sender().ID
 	action, ok := userActionsMap[userID]
 	if !ok {
-		c.Send("Nu imi e clar ce doresti, te rog alege actiunea prin apasarea unuia din butoane! 😜")
-		return startCommand(c)
+		return unknownAction(c)
 	}
 	if action.userCommnd == "addCumparaturi" {
 		action.userText = c.Message().Text
@@ -30,9 +33,7 @@ func handleOntext(c tele.Context) error {
 		}
 		err := processor.storage.Save(&shopitem)
 		if err != nil {
-			c.Send("Operatiunea nu a reusit. Incercati mai tarziu. 🥲", &tele.SendOptions{
-				ReplyTo: c.Message(),
-			})
+			return failedAction(c)
 		}
 
 		return c.Send("Adaugat! 🥳", &tele.SendOptions{
@@ -41,16 +42,13 @@ func handleOntext(c tele.Context) error {
 	} else if action.userCommnd == "modifyCumparaturi" {
 		err := processor.storage.ModifyNameShopItem(action.userText, c.Message().Text)
 		if err != nil {
-			return c.Send("Operatiunea nu a reusit. Incercati mai tarziu. storage🥲", &tele.SendOptions{
-				ReplyTo: c.Message(),
-			})
+			return failedAction(c)
 		}
 		return c.Send("Modificat! 🥳", &tele.SendOptions{
 			ReplyTo: c.Message(),
 		})
 	} else {
-		c.Send("Nu imi e clar ce doresti, te rog alege actiunea prin apasarea unuia din butoane! 😜")
-		return startCommand(c)
+		return unknownAction(c)
 	}
 }
 
@@ -58,8 +56,7 @@ func handleOnCallback(c tele.Context) error {
 	userID := c.Sender().ID
 	action, ok := userActionsMap[userID]
 	if !ok {
-		c.Send("Nu imi e clar ce doresti, te rog alege actiunea prin apasarea unuia din butoane! 😜")
-		return startCommand(c)
+		return unknownAction(c)
 	}
 
 	if action.userCommnd == "FocusCumparaturi" {
@@ -89,13 +86,10 @@ func handleCumparaturiShowCommBtn(c tele.Context) error {
 	}
 	userActionsMap[c.Sender().ID] = action
 
-	// fmt.Printf("callback %+v", call)
-	// fmt.Printf("\n\nmsg payload %+v", call.Message)
 	InlineShopButtonsList2 := make([][]tele.InlineButton, 10)
 	for i := range InlineShopButtonsList2 {
 		InlineShopButtonsList2[i] = make([]tele.InlineButton, 0, 10)
 	}
-	// data, ok := calllist[call.Data]
 
 	list, err := processor.storage.ShopItems()
 	if err != nil {
@@ -155,16 +149,12 @@ func handleCumparaturiAddBtn(c tele.Context) error {
 func handleMinusShopItemBtn(c tele.Context) error {
 	action := userActionsMap[c.Sender().ID]
 	if action.userText == "" {
-		return c.Send("Operatiunea nu a reusit. Incercati mai tarziu. userText🥲", &tele.SendOptions{
-			ReplyTo: c.Message(),
-		})
+		return failedAction(c)
 	}
 
-	err := processor.storage.MinusOneShopItem(action.userText)
+	err := processor.storage.ChangeShopItemCount(action.userText, -1)
 	if err != nil {
-		return c.Send("Operatiunea nu a reusit. Incercati mai tarziu. storage🥲", &tele.SendOptions{
-			ReplyTo: c.Message(),
-		})
+		return failedAction(c)
 	}
 
 	return c.Send("-1 👍")
@@ -173,17 +163,13 @@ func handleMinusShopItemBtn(c tele.Context) error {
 func handlePlusShopItemBtn(c tele.Context) error {
 	action := userActionsMap[c.Sender().ID]
 	if action.userText == "" {
-		return c.Send("Operatiunea nu a reusit. Incercati mai tarziu. userText🥲", &tele.SendOptions{
-			ReplyTo: c.Message(),
-		})
+		return failedAction(c)
 	}
 
-	err := processor.storage.PlusOneShopItem(action.userText)
+	err := processor.storage.ChangeShopItemCount(action.userText, 1)
 	if err != nil {
 		fmt.Println(err)
-		return c.Send("Operatiunea nu a reusit. Incercati mai tarziu. storage🥲", &tele.SendOptions{
-			ReplyTo: c.Message(),
-		})
+		return failedAction(c)
 	}
 
 	return c.Send("+1 👍")
@@ -200,17 +186,13 @@ func handleModifyShopItemBtn(c tele.Context) error {
 func handleDeleteShopItemBtn(c tele.Context) error {
 	action := userActionsMap[c.Sender().ID]
 	if action.userText == "" {
-		return c.Send("Operatiunea nu a reusit. Incercati mai tarziu. userText🥲", &tele.SendOptions{
-			ReplyTo: c.Message(),
-		})
+		return failedAction(c)
 	}
 
 	err := processor.storage.RemoveShopItem(action.userText)
 	if err != nil {
 		fmt.Println(err)
-		return c.Send("Operatiunea nu a reusit. Incercati mai tarziu. storage🥲", &tele.SendOptions{
-			ReplyTo: c.Message(),
-		})
+		return failedAction(c)
 	}
 
 	var strikethroughUserShopItemName string

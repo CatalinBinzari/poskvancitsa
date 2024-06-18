@@ -1,14 +1,9 @@
 package storage
 
-import (
-	"errors"
-)
-
 type Storage interface {
 	Save(p *AddShopItem) error
 	ShopItems() ([]ShopItem, error)
-	PlusOneShopItem(string) error
-	MinusOneShopItem(string) error
+	ChangeShopItemCount(string, int) error
 	RemoveShopItem(string) error
 	ModifyNameShopItem(string, string) error
 }
@@ -25,5 +20,3 @@ type AddShopItem struct {
 	Count    int    `bson:"count"`
 	ItemName string `bson:"itemName"`
 }
-
-var ErrNoSavedPages = errors.New("no saved pages")

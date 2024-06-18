@@ -83,29 +83,13 @@ func (s Storage) ShopItems() ([]storage.ShopItem, error) {
 	return items, nil
 }
 
-func (s Storage) PlusOneShopItem(_id string) error {
+func (s Storage) ChangeShopItemCount(_id string, count int) error {
 	mongoID, err := primitive.ObjectIDFromHex(_id)
 	if err != nil {
 		return err
 	}
 	filter := bson.M{"_id": mongoID}
-	update := bson.D{{"$inc", bson.D{{"count", 1}}}}
-	_, err = s.shopList.UpdateOne(context.Background(), filter, update,
-		options.Update().SetUpsert(true))
-	if err != nil {
-		return fmt.Errorf("can't update shop item %s", err)
-	}
-
-	return nil
-}
-
-func (s Storage) MinusOneShopItem(_id string) error {
-	mongoID, err := primitive.ObjectIDFromHex(_id)
-	if err != nil {
-		return err
-	}
-	filter := bson.M{"_id": mongoID}
-	update := bson.D{{"$inc", bson.D{{"count", -1}}}}
+	update := bson.D{{"$inc", bson.D{{"count", count}}}}
 	_, err = s.shopList.UpdateOne(context.Background(), filter, update,
 		options.Update().SetUpsert(true))
 	if err != nil {
@@ -144,26 +128,3 @@ func (s Storage) ModifyNameShopItem(_id string, itemName string) error {
 
 	return nil
 }
-
-// func (s Storage) IsExists(ctx context.Context, storagePage *storage.Page) (bool, error) {
-// 	count, err := s.pages.CountDocuments(ctx, toPage(storagePage).Filter())
-// 	if err != nil {
-// 		return false, e.Wrap("can't check if page exists", err)
-// 	}
-
-// 	return count > 0, nil
-// }
-
-// func toPage(p *storage.Page) Page {
-// 	return Page{
-// 		URL:      p.URL,
-// 		UserName: p.UserName,
-// 	}
-// }
-
-// func (p Page) Filter() bson.M {
-// 	return bson.M{
-// 		"url":      p.URL,
-// 		"username": p.UserName,
-// 	}
-// }
