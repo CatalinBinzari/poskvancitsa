@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"log/slog"
 	"poskvancitsa/config"
 	"poskvancitsa/storage/mongo"
 	"poskvancitsa/telegram"
@@ -15,7 +16,7 @@ func main() {
 
 	storage := mongo.New(cfg.MongoConnectionString, 10*time.Second)
 
-	log.Print("db cxn started")
+	slog.Info("db connextion started", "db", "mongodb")
 
 	pref := tele.Settings{
 		Token:  cfg.TgBotToken,
@@ -29,7 +30,7 @@ func main() {
 
 	processor := telegram.New(b, storage)
 
-	log.Print("telebot started")
+	slog.Info("telebot started")
 
 	err = processor.Exec()
 	if err != nil {
@@ -37,7 +38,7 @@ func main() {
 		return
 	}
 
-	log.Print("service started")
+	slog.Info("service started")
 
 	processor.Bot.Start()
 }

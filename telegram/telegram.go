@@ -27,6 +27,13 @@ type Processor struct {
 var processor *Processor
 var userActionsMap map[int64]userAction
 
+var UserIdList = []int64{570730943, 6583361128}
+
+const (
+	ADD_CUMPARATURI = " a fost adaugat pe lista de cumparaturi."
+	DEL_CUMPARATURI = " a fost sters de pe lista de cumparaturi."
+)
+
 func New(b *tele.Bot, storage storage.Storage) *Processor {
 	processor = &Processor{
 		Bot:     b,

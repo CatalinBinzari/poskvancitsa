@@ -2,23 +2,28 @@ package telegram
 
 import (
 	"fmt"
+	"log/slog"
 	"poskvancitsa/storage"
 
 	tele "gopkg.in/telebot.v3"
 )
 
 func startCommand(c tele.Context) error {
-	err := c.Send("Poskvon4imsea?", menu)
+	err := c.Send("Bun venit", menu)
 	if err != nil {
 		return err
 	}
 
-	err = c.Send("Bun venit! 🥎👻", activitiesSelector)
-	return err
+	return c.Send("Poskvon4imsea? 🥎👻", activitiesSelector)
 }
 
 func unknownAction(c tele.Context) error {
 	c.Send("Nu imi e clar ce doresti, te rog alege actiunea prin apasarea unuia din butoane! 😜")
+	return startCommand(c)
+}
+
+func todoAction(c tele.Context) error {
+	c.Send("Will be done soon! 😜")
 	return startCommand(c)
 }
 
@@ -49,7 +54,7 @@ func showCumparaturi(c tele.Context, cumparaturi_type int) error {
 		return failedAction(c)
 	}
 	if err != nil {
-		fmt.Println(err)
+		slog.Error("showCumparaturi", "err", err)
 		return failedAction(c)
 	}
 	if len(list) == 0 {
@@ -75,8 +80,20 @@ func showCumparaturi(c tele.Context, cumparaturi_type int) error {
 		InlineKeyboard: InlineShopButtonsList2,
 	})
 	if err != nil {
-		fmt.Println(err)
+		slog.Error("showCumparaturi", "err", err)
 		return failedAction(c)
 	}
 	return err
+}
+
+func notifyUsers(c tele.Context, itemName string, msg string) {
+	for _, id := range UserIdList {
+		if id == c.Sender().ID { // do not notify yourself
+			continue
+		}
+		var user tele.User
+		user.ID = id
+
+		processor.Bot.Send(&user, "'"+itemName+"'"+msg)
+	}
 }

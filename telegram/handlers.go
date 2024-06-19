@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"fmt"
+	"log/slog"
 	"poskvancitsa/storage"
 	"strconv"
 	"strings"
@@ -10,16 +11,32 @@ import (
 )
 
 func handleStart(c tele.Context) error {
-	return startCommand(c)
+	slog.Info("handleStart", "user", c.Sender().ID)
+	err := startCommand(c)
+	if err != nil {
+		slog.Error("handleStart", "user", c.Sender().ID, "err", err)
+	}
+	return err
 }
 
 func handleCumparaturiSectionBtn(c tele.Context) error {
-	return c.Edit("poshopyatsa", cumparaturiSelector)
+	slog.Info("handleCumparaturiSectionBtn", "user", c.Sender().ID)
+	err := c.Edit("poshopyatsa", cumparaturiSelector)
+	if err != nil {
+		slog.Error("handleCumparaturiSectionBtn", "user", c.Sender().ID, "err", err)
+	}
+	return err
 }
 
 func handleOntext(c tele.Context) error {
-	if c.Text() == menuCumparaturiShowCommStr {
+	slog.Info("handleOntext", "user", c.Sender().ID, "message", c.Message().Text)
+	switch c.Text() {
+	case menuCumparaturiShowCommStr:
 		return handleCumparaturiShowCommBtn(c)
+	case menuBtnSkvnon4Str:
+		return todoAction(c)
+	case menuBtnLovecoinsStr:
+		return todoAction(c)
 	}
 
 	userID := c.Sender().ID
@@ -37,15 +54,19 @@ func handleOntext(c tele.Context) error {
 		}
 		err := processor.storage.Save(&shopitem)
 		if err != nil {
+			slog.Error("handleOntext", "user", c.Sender().ID, "err", err)
 			return failedAction(c)
 		}
 
-		return c.Send("Adaugat! 🥳", &tele.SendOptions{
+		c.Send("Adaugat! 🥳", &tele.SendOptions{
 			ReplyTo: c.Message(),
 		})
+		notifyUsers(c, shopitem.ItemName, ADD_CUMPARATURI)
+		return nil
 	} else if action.userCommnd == "modifyCumparaturi" {
 		err := processor.storage.ModifyNameShopItem(action.userText, c.Message().Text)
 		if err != nil {
+			slog.Error("handleOntext", "user", c.Sender().ID, "err", err)
 			return failedAction(c)
 		}
 		return c.Send("Modificat! 🥳", &tele.SendOptions{
@@ -57,6 +78,7 @@ func handleOntext(c tele.Context) error {
 }
 
 func handleOnCallback(c tele.Context) error {
+	slog.Info("handleOnCallback", "user", c.Sender().ID)
 	userID := c.Sender().ID
 	action, ok := userActionsMap[userID]
 	if !ok {
@@ -67,9 +89,8 @@ func handleOnCallback(c tele.Context) error {
 	}
 
 	call := c.Callback()
-	fmt.Printf("%+v", call)
 	if call.Data == "" {
-		fmt.Println("Unknown callback data")
+		slog.Error("handleOnCallback Unknown callback data", "user", c.Sender().ID)
 	}
 
 	parts := strings.Split(call.Data, "||")
@@ -95,25 +116,27 @@ func handleOnCallback(c tele.Context) error {
 }
 
 func handleCumparaturiShowCommBtn(c tele.Context) error {
+	slog.Info("handleCumparaturiShowCommBtn", "user", c.Sender().ID)
 	return showCumparaturi(c, COMMON_CUMPARATURI)
 }
 
 func handleCumparaturiShowMyBtn(c tele.Context) error {
+	slog.Info("handleCumparaturiShowMyBtn", "user", c.Sender().ID)
 	return showCumparaturi(c, MY_CUMPARATURI)
 }
 
 func handleCumparaturiAddBtn(c tele.Context) error {
+	slog.Info("handleCumparaturiAddBtn", "user", c.Sender().ID)
 	action := userAction{
 		userCommnd: "addCumparaturi",
 	}
 	userActionsMap[c.Sender().ID] = action
 
-	fmt.Println(userActionsMap)
-
 	return c.Send("Ce vrei sa adaugi?", tele.ForceReply)
 }
 
 func handleModifyShopItemBtn(c tele.Context) error {
+	slog.Info("handleModifyShopItemBtn", "user", c.Sender().ID)
 	action, ok := userActionsMap[c.Sender().ID]
 	if !ok {
 		return failedAction(c)
@@ -125,6 +148,7 @@ func handleModifyShopItemBtn(c tele.Context) error {
 }
 
 func handleDeleteShopItemBtn(c tele.Context) error {
+	slog.Info("handleDeleteShopItemBtn", "user", c.Sender().ID)
 	action, ok := userActionsMap[c.Sender().ID]
 	if !ok {
 		return failedAction(c)
@@ -135,7 +159,7 @@ func handleDeleteShopItemBtn(c tele.Context) error {
 
 	err := processor.storage.RemoveShopItem(action.userText)
 	if err != nil {
-		fmt.Println(err)
+		slog.Error("handleDeleteShopItemBtn", "user", c.Sender().ID, "err", err)
 		return failedAction(c)
 	}
 
@@ -144,10 +168,13 @@ func handleDeleteShopItemBtn(c tele.Context) error {
 		strikethroughUserShopItemName += string(r) + strikethrough
 	}
 
-	return c.Send(fmt.Sprintf("%s 😵", strikethroughUserShopItemName))
+	err = c.Send(fmt.Sprintf("%s 😵", strikethroughUserShopItemName))
+	notifyUsers(c, action.userShopItemName, DEL_CUMPARATURI)
+	return err
 }
 
 func handleMinusShopItemBtn(c tele.Context) error {
+	slog.Info("handleMinusShopItemBtn", "user", c.Sender().ID)
 	action := userActionsMap[c.Sender().ID]
 	if action.userText == "" {
 		return failedAction(c)
@@ -155,6 +182,7 @@ func handleMinusShopItemBtn(c tele.Context) error {
 
 	err := processor.storage.ChangeShopItemCount(action.userText, -1)
 	if err != nil {
+		slog.Error("handleMinusShopItemBtn", "user", c.Sender().ID, "err", err)
 		return failedAction(c)
 	}
 
@@ -162,6 +190,7 @@ func handleMinusShopItemBtn(c tele.Context) error {
 }
 
 func handlePlusShopItemBtn(c tele.Context) error {
+	slog.Info("handlePlusShopItemBtn", "user", c.Sender().ID)
 	action := userActionsMap[c.Sender().ID]
 	if action.userText == "" {
 		return failedAction(c)
@@ -169,7 +198,7 @@ func handlePlusShopItemBtn(c tele.Context) error {
 
 	err := processor.storage.ChangeShopItemCount(action.userText, 1)
 	if err != nil {
-		fmt.Println(err)
+		slog.Error("handlePlusShopItemBtn", "user", c.Sender().ID, "err", err)
 		return failedAction(c)
 	}
 
@@ -177,6 +206,7 @@ func handlePlusShopItemBtn(c tele.Context) error {
 }
 
 func handleCumparaturiRemBtn(c tele.Context) error {
+	slog.Info("handleCumparaturiRemBtn", "user", c.Sender().ID)
 	showCumparaturi(c, COMMON_CUMPARATURI)
 	action := userAction{
 		userCommnd: "RemCumparaturi",
