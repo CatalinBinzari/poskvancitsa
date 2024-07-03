@@ -34,7 +34,7 @@ func handleOntext(c tele.Context) error {
 	case menuCumparaturiShowCommStr:
 		return handleCumparaturiShowCommBtn(c)
 	case menuBtnSkvnon4Str:
-		return todoAction(c)
+		return handleBtnSkvnon4Str(c)
 	case menuBtnLovecoinsStr:
 		return todoAction(c)
 	}
@@ -61,7 +61,7 @@ func handleOntext(c tele.Context) error {
 		c.Send("Adaugat! 🥳", &tele.SendOptions{
 			ReplyTo: c.Message(),
 		})
-		notifyUsers(c, shopitem.ItemName, ADD_CUMPARATURI)
+		notifyUsers(c, shopitem.ItemName+ADD_CUMPARATURI)
 		return nil
 	} else if action.userCommnd == "modifyCumparaturi" {
 		err := processor.storage.ModifyNameShopItem(action.userText, c.Message().Text)
@@ -169,7 +169,7 @@ func handleDeleteShopItemBtn(c tele.Context) error {
 	}
 
 	err = c.Send(fmt.Sprintf("%s 😵", strikethroughUserShopItemName))
-	notifyUsers(c, action.userShopItemName, DEL_CUMPARATURI)
+	notifyUsers(c, action.userShopItemName+DEL_CUMPARATURI)
 	return err
 }
 
@@ -213,4 +213,11 @@ func handleCumparaturiRemBtn(c tele.Context) error {
 	}
 	userActionsMap[c.Sender().ID] = action
 	return c.Send("Alege ce doresti sa stergi.")
+}
+
+func handleBtnSkvnon4Str(c tele.Context) error {
+	slog.Info("handleBtnSkvnon4Str", "user", c.Sender().ID)
+	skvon4Users(c, " te skvon4este 😘🐈")
+	// todo stats, cate skvon4 ai trimis si cate ai primit
+	return c.Send("Skvon4 😘🐈 trimis")
 }

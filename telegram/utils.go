@@ -88,7 +88,7 @@ func showCumparaturi(c tele.Context, cumparaturi_type int) error {
 	return err
 }
 
-func notifyUsers(c tele.Context, itemName string, msg string) {
+func notifyUsers(c tele.Context, msg string) {
 	for _, id := range UserIdList {
 		if id == c.Sender().ID { // do not notify yourself
 			continue
@@ -96,7 +96,7 @@ func notifyUsers(c tele.Context, itemName string, msg string) {
 		var user tele.User
 		user.ID = id
 
-		processor.Bot.Send(&user, "'"+itemName+"'"+msg)
+		processor.Bot.Send(&user, msg)
 	}
 }
 
@@ -109,6 +109,27 @@ func remindUsers(msg string) {
 		if err != nil {
 			slog.Error("remindUsers", "user", user.ID, "err", err)
 		}
+	}
+}
+
+func skvon4Users(c tele.Context, msg string) {
+
+	skvon4er := ""
+
+	for name, id := range UserIdList {
+		if id == c.Sender().ID {
+			skvon4er = name
+			break
+		}
+	}
+	for _, id := range UserIdList {
+		if id == c.Sender().ID { // do not notify yourself
+			continue
+		}
+		var user tele.User
+		user.ID = id
+
+		processor.Bot.Send(&user, skvon4er+msg)
 	}
 }
 

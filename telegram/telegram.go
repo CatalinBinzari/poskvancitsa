@@ -27,7 +27,10 @@ type Processor struct {
 var processor *Processor
 var userActionsMap map[int64]userAction
 
-var UserIdList = []int64{570730943, 6583361128}
+var UserIdList = map[string]int64{
+	"Iunona":  570730943,
+	"Catalin": 6583361128,
+}
 
 const (
 	ADD_CUMPARATURI = " a fost adaugat pe lista de cumparaturi."
