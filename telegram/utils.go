@@ -3,7 +3,9 @@ package telegram
 import (
 	"fmt"
 	"log/slog"
+	"math/rand"
 	"poskvancitsa/storage"
+	"time"
 
 	tele "gopkg.in/telebot.v3"
 )
@@ -96,4 +98,27 @@ func notifyUsers(c tele.Context, itemName string, msg string) {
 
 		processor.Bot.Send(&user, "'"+itemName+"'"+msg)
 	}
+}
+
+func remindUsers(msg string) {
+	for _, id := range UserIdList {
+		var user tele.User
+		user.ID = id
+
+		_, err := processor.Bot.Send(&user, msg)
+		if err != nil {
+			slog.Error("remindUsers", "user", user.ID, "err", err)
+		}
+	}
+}
+
+func pickRandomItem(list []storage.ShopItem) storage.ShopItem {
+	// Seed the random number generator
+	rand.Seed(time.Now().UnixNano())
+
+	// Generate a random index within the bounds of the list
+	randomIndex := rand.Intn(len(list))
+
+	// Return the item at the random index
+	return list[randomIndex]
 }

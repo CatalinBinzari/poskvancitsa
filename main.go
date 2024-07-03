@@ -4,6 +4,7 @@ import (
 	"log"
 	"log/slog"
 	"poskvancitsa/config"
+	"poskvancitsa/cronjob"
 	"poskvancitsa/storage/mongo"
 	"poskvancitsa/telegram"
 	"time"
@@ -37,6 +38,8 @@ func main() {
 		log.Fatal(err)
 		return
 	}
+
+	cronjob.StartCronjob(telegram.BuyReminders, "17:57")
 
 	slog.Info("service started")
 
